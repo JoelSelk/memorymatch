@@ -1,28 +1,19 @@
 // App.js
 import React from 'react';
-import { StyleSheet, Text, View, Button } from 'react-native';
-import { globalStyles } from './globalStyles';
-import { StatusBar } from 'expo-status-bar';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import MenuScreen from './MenuScreen';
+import PlayScreen from './PlayScreen';
+
+const Stack = createStackNavigator();
 
 export default function App() {
-    const handlePlayPress = () => {
-        // Navigate to Play page
-        console.log("Navigating to Play page");
-    };
-
-    const handleAddPicturePress = () => {
-        // Navigate to Add Picture page
-        console.log("Navigating to Add Picture page");
-    };
-
     return (
-        <View style={globalStyles.container}>
-            <Text style={globalStyles.title}>Welcome to My App</Text>
-            <View style={globalStyles.buttonContainer}>
-                <Button title="Play" onPress={handlePlayPress} />
-                <Button title="Add Picture" onPress={handleAddPicturePress} />
-            </View>
-            <StatusBar style="auto" />
-        </View>
+        <NavigationContainer>
+            <Stack.Navigator initialRouteName="Menu">
+                <Stack.Screen name="Menu" component={MenuScreen} options={{ title: 'Menu' }} />
+                <Stack.Screen name="Play" component={PlayScreen} options={{ title: 'Play' }} />
+            </Stack.Navigator>
+        </NavigationContainer>
     );
 }

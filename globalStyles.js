@@ -8,31 +8,25 @@ export const globalStyles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    title: {
-        fontSize: 24,
-        marginBottom: 20,
+    gridContainer: {
+        alignItems: 'center',
     },
-    buttonContainer: {
+    rowContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        width: '80%',
     },
-    cardContainer: {
-        flex: 1,
+    tileContainer: {
+        width: 100,
+        height: 100,
         margin: 5,
-        aspectRatio: 1,
-        backgroundColor: '#007bff',
         justifyContent: 'center',
         alignItems: 'center',
         borderRadius: 10,
+        backgroundColor: '#007bff', // Blue color when visible but not flipped
     },
-    flippedCard: {
+    flippedTile: {
         backgroundColor: '#fff',
     },
-    hiddenCard: {
-        backgroundColor: 'transparent',
-    },
-    cardText: {
+    tileText: {
         fontSize: 24,
         color: '#fff',
     },

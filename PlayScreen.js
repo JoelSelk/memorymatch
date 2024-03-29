@@ -1,82 +1,168 @@
-// PlayScreen.js
-import React, { useState } from 'react';
-import { View, TouchableOpacity, FlatList, Text } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, TouchableOpacity, Text, Alert } from 'react-native';
 import { globalStyles } from './globalStyles';
-import { StatusBar } from 'expo-status-bar';
 
 export default function PlayScreen() {
-    const [cards, setCards] = useState([
-        { id: 1, number: 1, isFlipped: false, isVisible: true },
-        { id: 2, number: 1, isFlipped: false, isVisible: true },
-        { id: 3, number: 2, isFlipped: false, isVisible: true },
-        { id: 4, number: 2, isFlipped: false, isVisible: true },
-        { id: 5, number: 3, isFlipped: false, isVisible: true },
-        { id: 6, number: 3, isFlipped: false, isVisible: true },
-        { id: 7, number: 4, isFlipped: false, isVisible: true },
-        { id: 8, number: 4, isFlipped: false, isVisible: true },
-    ]);
+    const [tiles, setTiles] = useState([]);
+    const [firstTileId, setFirstTileId] = useState(null);
+    const [flippedTiles, setFlippedTiles] = useState(0);
+    const [matches, setMatches] = useState(0);
 
-    const [selectedCards, setSelectedCards] = useState([]);
+    useEffect(() => {
+        generateTiles();
+    }, []);
 
-    const handleCardPress = (id, number) => {
-        if (selectedCards.length === 2) {
-            return;
+    useEffect(() => {
+        if (matches === 6) {
+            // All tiles are matched, show "You win" alert
+            Alert.alert('You win', 'Congratulations!', [
+                { text: 'OK', onPress: generateTiles }
+            ]);
+        }
+    }, [matches]);
+
+    const generateTiles = () => {
+        // Generate matching pairs of numbers
+        const matchingPairs = Array.from({ length: 6 }, (_, index) => index + 1);
+        const pairs = [...matchingPairs, ...matchingPairs];
+
+        // Shuffle pairs randomly
+        for (let i = pairs.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
         }
 
-        const updatedCards = cards.map(card => {
-            if (card.id === id) {
-                return { ...card, isFlipped: true };
+        // Create tiles with matching pairs
+        const newTiles = pairs.map((number, index) => ({
+            id: index + 1,
+            number: number,
+            isFlipped: false,
+            isVisible: true,
+        }));
+
+        setTiles(newTiles);
+        setFirstTileId(null);
+        setFlippedTiles(0);
+        setMatches(0);
+    };
+
+    const handleTilePress = (id) => {
+        if (flippedTiles >= 2) return;
+
+        setTiles((prevTiles) =>
+            prevTiles.map((tile) =>
+                tile.id === id ? { ...tile, isFlipped: true } : tile
+            )
+        );
+
+        setFlippedTiles(flippedTiles + 1);
+
+        if (firstTileId === null) {
+            setFirstTileId(id);
+        } else {
+            if (tiles[firstTileId - 1].number === tiles[id - 1].number) {
+                // Matching pair found, mark tiles as matched
+                setMatches(matches + 1);
+                setTiles((prevTiles) =>
+                    prevTiles.map((tile) =>
+                        tile.number === tiles[firstTileId - 1].number
+                            ? { ...tile, isFlipped: true, isMatched: true }
+                            : tile
+                    )
+                );
+            } else {
+                // No match, flip tiles back after a short delay
+                setTimeout(() => {
+                    setTiles((prevTiles) =>
+                        prevTiles.map((tile) =>
+                            tile.isMatched ? tile : { ...tile, isFlipped: false }
+                        )
+                    );
+                }, 1000);
             }
-            return card;
-        });
 
-        setCards(updatedCards);
-
-        setSelectedCards([...selectedCards, { id, number }]);
-
-        if (selectedCards.length === 1 && selectedCards[0].number === number) {
-            setTimeout(() => {
-                const updatedCards = cards.map(card => {
-                    if (card.number === number) {
-                        return { ...card, isVisible: false };
-                    }
-                    return card;
-                });
-                setCards(updatedCards);
-            }, 1000);
-        } else if (selectedCards.length === 1) {
-            setTimeout(() => {
-                const updatedCards = cards.map(card => {
-                    return { ...card, isFlipped: false };
-                });
-                setCards(updatedCards);
-            }, 1000);
+            // Reset first tile
+            setFirstTileId(null);
+            setFlippedTiles(0);
         }
     };
 
-    const renderCard = ({ item }) => (
-        <TouchableOpacity
-            style={[
-                globalStyles.cardContainer,
-                item.isFlipped && globalStyles.flippedCard,
-                !item.isVisible && globalStyles.hiddenCard,
-            ]}
-            onPress={() => handleCardPress(item.id, item.number)}
-            disabled={!item.isVisible || selectedCards.length === 2}
-        >
-            <Text style={globalStyles.cardText}>{item.isFlipped ? item.number : ' '}</Text>
-        </TouchableOpacity>
-    );
-
     return (
         <View style={globalStyles.container}>
-            <FlatList
-                data={cards}
-                renderItem={renderCard}
-                keyExtractor={item => item.id.toString()}
-                numColumns={3}
-            />
-            <StatusBar style="auto" />
+            <View style={globalStyles.gridContainer}>
+                <View style={globalStyles.rowContainer}>
+                    {tiles.slice(0, 3).map((tile) => (
+                        <TouchableOpacity
+                            key={tile.id}
+                            style={[
+                                globalStyles.tileContainer,
+                                tile.isMatched && { backgroundColor: 'red' },
+                                !tile.isVisible && { backgroundColor: 'transparent' },
+                            ]}
+                            onPress={() => handleTilePress(tile.id)}
+                            disabled={!tile.isVisible || tile.isFlipped || flippedTiles >= 2}
+                        >
+                            <Text style={globalStyles.tileText}>
+                                {tile.isFlipped ? tile.number : ' '}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+                <View style={globalStyles.rowContainer}>
+                    {tiles.slice(3, 6).map((tile) => (
+                        <TouchableOpacity
+                            key={tile.id}
+                            style={[
+                                globalStyles.tileContainer,
+                                tile.isMatched && { backgroundColor: 'red' },
+                                !tile.isVisible && { backgroundColor: 'transparent' },
+                            ]}
+                            onPress={() => handleTilePress(tile.id)}
+                            disabled={!tile.isVisible || tile.isFlipped || flippedTiles >= 2}
+                        >
+                            <Text style={globalStyles.tileText}>
+                                {tile.isFlipped ? tile.number : ' '}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+                <View style={globalStyles.rowContainer}>
+                    {tiles.slice(6, 9).map((tile) => (
+                        <TouchableOpacity
+                            key={tile.id}
+                            style={[
+                                globalStyles.tileContainer,
+                                tile.isMatched && { backgroundColor: 'red' },
+                                !tile.isVisible && { backgroundColor: 'transparent' },
+                            ]}
+                            onPress={() => handleTilePress(tile.id)}
+                            disabled={!tile.isVisible || tile.isFlipped || flippedTiles >= 2}
+                        >
+                            <Text style={globalStyles.tileText}>
+                                {tile.isFlipped ? tile.number : ' '}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+                <View style={globalStyles.rowContainer}>
+                    {tiles.slice(9, 12).map((tile) => (
+                        <TouchableOpacity
+                            key={tile.id}
+                            style={[
+                                globalStyles.tileContainer,
+                                tile.isMatched && { backgroundColor: 'red' },
+                                !tile.isVisible && { backgroundColor: 'transparent' },
+                            ]}
+                            onPress={() => handleTilePress(tile.id)}
+                            disabled={!tile.isVisible || tile.isFlipped || flippedTiles >= 2}
+                        >
+                            <Text style={globalStyles.tileText}>
+                                {tile.isFlipped ? tile.number : ' '}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
         </View>
     );
 }
